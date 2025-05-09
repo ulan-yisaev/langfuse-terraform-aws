@@ -1,91 +1,45 @@
-data "aws_availability_zones" "available" {
-  state = "available"
+# Get information about the existing VPC and subnets instead of creating new ones
+data "aws_vpc" "selected_vpc_data" {
+  id = var.existing_vpc_id
 }
+
+# Helper data source to get full details of each provided subnet ID
+data "aws_subnet" "selected_private_subnets_details" {
+  for_each = toset(var.existing_private_subnet_ids)
+  id       = each.value
+}
+
+data "aws_subnet" "selected_public_subnets_details" {
+  for_each = length(var.existing_public_subnet_ids) > 0 ? toset(var.existing_public_subnet_ids) : toset([])
+  id       = each.value
+}
+
+data "aws_region" "current" {}
 
 locals {
-  azs = slice(data.aws_availability_zones.available.names, 0, 3)
-}
+  # This 'vpc_config' local is the key. Other files will reference its attributes.
+  # The attribute names (vpc_id, private_subnets, etc.) are chosen to match
+  # the output names of the original 'terraform-aws-modules/vpc/aws' module.
+  vpc_config = {
+    vpc_id          = data.aws_vpc.selected_vpc_data.id
+    vpc_cidr_block  = data.aws_vpc.selected_vpc_data.cidr_block
+    private_subnets = var.existing_private_subnet_ids
+    public_subnets  = var.existing_public_subnet_ids
 
-module "vpc" {
-  source  = "terraform-aws-modules/vpc/aws"
-  version = "~> 5.0"
+    # Fetching route table IDs associated with the private subnets.
+    # This assumes each private subnet has an explicitly associated route table.
+    private_route_table_ids = []
+    # private_route_table_ids = [
+    #   for s in data.aws_subnet.selected_private_subnets_details :
+    #   s.route_table_id != null ? s.route_table_id : null
+    # ]
 
-  name = "${var.name}-vpc"
-  cidr = var.vpc_cidr
-
-  azs             = local.azs
-  private_subnets = [for k, v in local.azs : cidrsubnet(var.vpc_cidr, 4, k)]
-  public_subnets  = [for k, v in local.azs : cidrsubnet(var.vpc_cidr, 8, k + 48)]
-
-  enable_nat_gateway     = true
-  single_nat_gateway     = !var.use_single_nat_gateway
-  one_nat_gateway_per_az = var.use_single_nat_gateway
-
-  enable_dns_hostnames = true
-  enable_dns_support   = true
-
-  # VPC Flow Logs
-  enable_flow_log                      = true
-  create_flow_log_cloudwatch_log_group = true
-  create_flow_log_cloudwatch_iam_role  = true
-  flow_log_max_aggregation_interval    = 60
-
-  # Add required tags for the AWS Load Balancer Controller
-  private_subnet_tags = {
-    "kubernetes.io/role/internal-elb"   = "1"
-    "kubernetes.io/cluster/${var.name}" = "shared"
-  }
-
-  public_subnet_tags = {
-    "kubernetes.io/role/elb"            = "1"
-    "kubernetes.io/cluster/${var.name}" = "shared"
-  }
-
-  tags = {
-    Name = local.tag_name
+    azs = distinct([for s in data.aws_subnet.selected_private_subnets_details : s.availability_zone])
   }
 }
 
-# VPC Endpoints for AWS services
-resource "aws_vpc_endpoint" "sts" {
-  vpc_id             = module.vpc.vpc_id
-  service_name       = "com.amazonaws.${data.aws_region.current.name}.sts"
-  vpc_endpoint_type  = "Interface"
-  subnet_ids         = module.vpc.private_subnets
-  security_group_ids = [aws_security_group.vpc_endpoints.id]
-
-  private_dns_enabled = true
-
-  tags = {
-    Name = "${local.tag_name} STS VPC Endpoint"
-  }
-}
-
-resource "aws_vpc_endpoint" "s3" {
-  vpc_id            = module.vpc.vpc_id
-  service_name      = "com.amazonaws.${data.aws_region.current.name}.s3"
-  vpc_endpoint_type = "Gateway"
-  route_table_ids   = module.vpc.private_route_table_ids
-
-  tags = {
-    Name = "${local.tag_name} S3 VPC Endpoint"
-  }
-}
-
-# Security group for VPC endpoints
-resource "aws_security_group" "vpc_endpoints" {
-  name        = "${var.name}-vpc-endpoints"
-  description = "Security group for VPC endpoints"
-  vpc_id      = module.vpc.vpc_id
-
-  ingress {
-    from_port   = 443
-    to_port     = 443
-    protocol    = "tcp"
-    cidr_blocks = [module.vpc.vpc_cidr_block]
-  }
-
-  tags = {
-    Name = "${local.tag_name} VPC Endpoints"
-  }
-} 
+# Remove all VPC Endpoint resources - they are assumed to exist in the target VPC
+# Removed:
+# - resource "aws_vpc_endpoint" "sts" { ... }
+# - resource "aws_vpc_endpoint" "s3" { ... }
+# - resource "aws_security_group" "vpc_endpoints" { ... }

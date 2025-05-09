@@ -1,5 +1,18 @@
+# Use existing Route53 zone instead of creating a new one
+data "aws_route53_zone" "selected_hosted_zone" {
+  name         = var.target_route53_zone_name
+  private_zone = true
+}
+
+locals {
+  # Determine ACM certificate ARN: use existing if provided, otherwise create a new one.
+  acm_certificate_arn_to_use = var.existing_acm_certificate_arn != null ? var.existing_acm_certificate_arn : aws_acm_certificate.cert[0].arn
+  create_new_acm_cert        = var.existing_acm_certificate_arn == null
+}
+
 # ACM Certificate for the domain
 resource "aws_acm_certificate" "cert" {
+  count             = local.create_new_acm_cert ? 1 : 0
   domain_name       = var.domain
   validation_method = "DNS"
 
@@ -12,36 +25,30 @@ resource "aws_acm_certificate" "cert" {
   }
 }
 
-# Create Route53 zone for the domain
-resource "aws_route53_zone" "zone" {
-  name = var.domain
-
-  tags = {
-    Name = local.tag_name
-  }
-}
-
 # Create DNS records for certificate validation
 resource "aws_route53_record" "cert_validation" {
-  for_each = {
-    for dvo in aws_acm_certificate.cert.domain_validation_options : dvo.domain_name => {
+  # Only create validation records if a new cert is being created
+  for_each = local.create_new_acm_cert ? {
+    for dvo in aws_acm_certificate.cert[0].domain_validation_options : dvo.domain_name => {
       name   = dvo.resource_record_name
       record = dvo.resource_record_value
       type   = dvo.resource_record_type
     }
-  }
+  } : {}
 
   allow_overwrite = true
   name            = each.value.name
   records         = [each.value.record]
   ttl             = 60
   type            = each.value.type
-  zone_id         = aws_route53_zone.zone.zone_id
+  zone_id         = data.aws_route53_zone.selected_hosted_zone.zone_id
 }
 
 # Certificate validation
-resource "aws_acm_certificate_validation" "cert" {
-  certificate_arn         = aws_acm_certificate.cert.arn
+resource "aws_acm_certificate_validation" "cert_validation_resource" {
+  count = local.create_new_acm_cert ? 1 : 0
+
+  certificate_arn         = aws_acm_certificate.cert[0].arn
   validation_record_fqdns = [for record in aws_route53_record.cert_validation : record.fqdn]
 }
 
@@ -60,8 +67,8 @@ data "aws_lb" "ingress" {
 }
 
 # Create Route53 record for the ALB
-resource "aws_route53_record" "langfuse" {
-  zone_id = aws_route53_zone.zone.zone_id
+resource "aws_route53_record" "langfuse_app_alias" {
+  zone_id = data.aws_route53_zone.selected_hosted_zone.zone_id
   name    = var.domain
   type    = "A"
 

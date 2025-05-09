@@ -22,5 +22,15 @@ output "cluster_token" {
 
 output "route53_nameservers" {
   description = "Nameserver for the Route53 zone"
-  value       = aws_route53_zone.zone.name_servers
+  value       = data.aws_route53_zone.selected_hosted_zone.name_servers
+}
+
+output "langfuse_kubernetes_secret_name" {
+  description = "Name of the Kubernetes secret holding Langfuse credentials."
+  value       = kubernetes_secret.langfuse.metadata[0].name
+}
+
+output "langfuse_kubernetes_secret_namespace" {
+  description = "Namespace of the Kubernetes secret."
+  value       = kubernetes_secret.langfuse.metadata[0].namespace
 }

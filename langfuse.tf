@@ -1,4 +1,7 @@
 locals {
+  # Reference the ACM certificate ARN, mirroring the logic from tls-certificate.tf
+  _acm_arn_for_ingress = var.existing_acm_certificate_arn != null ? var.existing_acm_certificate_arn : aws_acm_certificate.cert[0].arn
+
   langfuse_values = <<EOT
 global:
   defaultStorageClass: efs
@@ -53,22 +56,28 @@ s3:
   mediaUpload:
     prefix: "media/"
 EOT
-  ingress_values  = <<EOT
+
+  inbound_cidrs_annotation_value = join(",", var.loadbalancer_inbound_cidrs)
+
+  ingress_values = <<EOT
 langfuse:
   ingress:
     enabled: true
     className: alb
     annotations:
-      alb.ingress.kubernetes.io/scheme: internet-facing
+      alb.ingress.kubernetes.io/scheme: internal
       alb.ingress.kubernetes.io/target-type: 'ip'
       alb.ingress.kubernetes.io/listen-ports: '[{"HTTP":80}, {"HTTPS":443}]'
       alb.ingress.kubernetes.io/ssl-redirect: '443'
+      alb.ingress.kubernetes.io/certificate-arn: "${local._acm_arn_for_ingress}"
+      ${length(var.loadbalancer_inbound_cidrs) > 0 && var.loadbalancer_inbound_cidrs[0] != "0.0.0.0/0" ? "alb.ingress.kubernetes.io/inbound-cidrs: \"${local.inbound_cidrs_annotation_value}\"" : ""}
     hosts:
     - host: ${var.domain}
       paths:
       - path: /
         pathType: Prefix
 EOT
+
   encryption_values = var.use_encryption_key == false ? "" : <<EOT
 langfuse:
   encryptionKey:
@@ -124,10 +133,11 @@ resource "helm_release" "langfuse" {
   namespace        = "langfuse"
   create_namespace = true
 
-  values = [
-    local.langfuse_values,
-    local.ingress_values,
-  ]
+  values = compact(concat(
+    [local.langfuse_values],
+    [local.ingress_values],
+    var.use_encryption_key ? [local.encryption_values] : []
+  ))
 
   depends_on = [
     aws_iam_role.langfuse_irsa,

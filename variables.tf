@@ -9,10 +9,26 @@ variable "domain" {
   type        = string
 }
 
-variable "vpc_cidr" {
-  description = "CIDR block for VPC"
+variable "existing_vpc_id" {
+  description = "The ID of the existing VPC to deploy Langfuse into."
   type        = string
-  default     = "10.0.0.0/16"
+}
+
+variable "existing_private_subnet_ids" {
+  description = "A list of existing private subnet IDs to use for Langfuse components."
+  type        = list(string)
+}
+
+variable "existing_public_subnet_ids" {
+  description = "A list of existing public subnet IDs (e.g., where NAT Gateways reside, if module logic needs this context)."
+  type        = list(string)
+  default     = [] // Often not directly needed by app components if NATs are just a route target
+}
+
+variable "loadbalancer_inbound_cidrs" {
+  description = "List of CIDR blocks to allow access to the internal load balancer."
+  type        = list(string)
+  default     = ["0.0.0.0/0"] // Default to allow all if not specified, adjust as needed
 }
 
 variable "kubernetes_version" {
@@ -22,9 +38,21 @@ variable "kubernetes_version" {
 }
 
 variable "use_encryption_key" {
-  description = "Wheter or not to use an Encryption key for LLM API credential and integration credential store"
+  description = "Whether to use an Encryption key for LLM API credential and integration credential store."
   type        = bool
-  default     = false
+  default     = true // Changed default to true as per general recommendation
+}
+
+variable "target_route53_zone_name" {
+  description = "The name of the existing Route53 zone (e.g., ai-test.aws.lll.eu)."
+  type        = string
+  // No default, must be provided
+}
+
+variable "existing_acm_certificate_arn" {
+  description = "Optional ARN of an existing ACM certificate to use for the ALB."
+  type        = string
+  default     = null
 }
 
 variable "postgres_instance_count" {
@@ -71,10 +99,4 @@ variable "fargate_profile_namespaces" {
     "langfuse",
     "kube-system",
   ]
-}
-
-variable "use_single_nat_gateway" {
-  description = "To use a single NAT Gateway (cheaper), or one per AZ (more resilient)"
-  type        = bool
-  default     = false
 }
