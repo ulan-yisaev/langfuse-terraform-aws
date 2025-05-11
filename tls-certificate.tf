@@ -44,12 +44,12 @@ resource "aws_route53_record" "cert_validation" {
   zone_id         = data.aws_route53_zone.selected_hosted_zone.zone_id
 }
 
-# Certificate validation
+# ACM certificate validation doesn't work with private Route 53 zones
 resource "aws_acm_certificate_validation" "cert_validation_resource" {
-  count = local.create_new_acm_cert ? 1 : 0
+ count = local.create_new_acm_cert && !var.disable_certificate_validation ? 1 : 0
 
-  certificate_arn         = aws_acm_certificate.cert[0].arn
-  validation_record_fqdns = [for record in aws_route53_record.cert_validation : record.fqdn]
+ certificate_arn         = aws_acm_certificate.cert[0].arn
+ validation_record_fqdns = [for record in aws_route53_record.cert_validation : record.fqdn]
 }
 
 # Get the ALB details

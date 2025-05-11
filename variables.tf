@@ -55,6 +55,12 @@ variable "existing_acm_certificate_arn" {
   default     = null
 }
 
+ variable "disable_certificate_validation" {
+   description = "Set to true to skip waiting for ACM certificate validation (useful for private Route53 zones)"
+   type        = bool
+   default     = false
+ }
+
 variable "postgres_instance_count" {
   description = "Number of PostgreSQL instances to create"
   type        = number
