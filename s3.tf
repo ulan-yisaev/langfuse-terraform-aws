@@ -22,6 +22,8 @@ resource "aws_s3_bucket_versioning" "langfuse" {
 }
 
 resource "aws_s3_bucket_public_access_block" "langfuse" {
+  count = var.disable_s3_public_access_block ? 0 : 1
+
   bucket = aws_s3_bucket.langfuse.id
 
   block_public_acls       = true

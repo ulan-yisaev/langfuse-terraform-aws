@@ -55,12 +55,23 @@ variable "existing_acm_certificate_arn" {
   default     = null
 }
 
- variable "disable_certificate_validation" {
-   description = "Set to true to skip waiting for ACM certificate validation (useful for private Route53 zones)"
-   type        = bool
-   default     = false
- }
+variable "disable_certificate_validation" {
+ description = "Set to true to skip waiting for ACM certificate validation (useful for private Route53 zones)"
+ type        = bool
+ default     = false
+}
 
+variable "helm_release_name" {
+description = "Custom name for the Helm release to avoid conflicts with existing releases"
+type        = string
+default     = null
+}
+
+variable "disable_s3_public_access_block" {
+description = "Set to true to skip creating S3 public access block (for organizations with restrictive SCPs)"
+type        = bool
+default     = false
+}
 variable "postgres_instance_count" {
   description = "Number of PostgreSQL instances to create"
   type        = number
