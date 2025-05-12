@@ -67,11 +67,22 @@ type        = string
 default     = null
 }
 
+variable "helm_release_config" {
+  description = "Configuration options for the Helm release (timeout, wait, values_overrides)"
+  type = object({
+    timeout = optional(number, 300)
+    wait = optional(bool, true)
+    values_overrides = optional(list(string), [])
+  })
+  default = {}
+}
+
 variable "disable_s3_public_access_block" {
 description = "Set to true to skip creating S3 public access block (for organizations with restrictive SCPs)"
 type        = bool
 default     = false
 }
+
 variable "postgres_instance_count" {
   description = "Number of PostgreSQL instances to create"
   type        = number

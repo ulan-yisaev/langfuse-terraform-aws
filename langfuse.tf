@@ -134,11 +134,16 @@ resource "helm_release" "langfuse" {
   chart            = "langfuse"
   namespace        = "langfuse"
   create_namespace = true
+  
+  # Apply configuration from var.helm_release_config
+  timeout = lookup(var.helm_release_config, "timeout", 300)
+  wait    = lookup(var.helm_release_config, "wait", true)
 
   values = compact(concat(
     [local.langfuse_values],
     [local.ingress_values],
-    var.use_encryption_key ? [local.encryption_values] : []
+    var.use_encryption_key ? [local.encryption_values] : [],
+    lookup(var.helm_release_config, "values_overrides", [])
   ))
 
   depends_on = [
