@@ -122,7 +122,22 @@ resource "aws_iam_role_policy_attachment" "efs" {
 resource "aws_eks_addon" "efs_csi" {
   cluster_name = aws_eks_cluster.langfuse.name
   addon_name   = "aws-efs-csi-driver"
-  depends_on = [aws_iam_role.efs]
+  
+  # For Fargate, we need to use addon_version that supports Fargate
+  addon_version = "v1.7.0-eksbuild.1"  # Use a compatible version
+  
+  # Configure service account for the addon
+  service_account_role_arn = aws_iam_role.efs.arn
+  
+  # Make sure the addon preserves any values set by users when upgrading/changing
+  resolve_conflicts_on_create = "PRESERVE"
+  resolve_conflicts_on_update = "PRESERVE"
+  
+  depends_on = [
+    aws_iam_role.efs,
+    aws_iam_role_policy_attachment.efs,
+    aws_eks_fargate_profile.namespaces
+  ]
 }
 
 resource "kubernetes_storage_class" "efs" {
@@ -135,4 +150,8 @@ resource "kubernetes_storage_class" "efs" {
     fileSystemId     = aws_efs_file_system.langfuse.id
     directoryPerms   = "700"
   }
+  
+  depends_on = [
+    aws_eks_addon.efs_csi
+  ]
 }
