@@ -53,19 +53,22 @@ resource "random_password" "redis_password" {
 }
 
 resource "aws_elasticache_replication_group" "redis" {
-  replication_group_id       = var.name
+  replication_group_id       = "${var.name}-redis"
   description                = "Redis cluster for Langfuse"
+  engine                     = "redis"
+  engine_version             = "7.1"
   node_type                  = var.cache_node_type
   port                       = 6379
   parameter_group_name       = aws_elasticache_parameter_group.redis.name
-  automatic_failover_enabled = var.cache_instance_count > 1 ? true : false
-  num_cache_clusters         = var.cache_instance_count
   subnet_group_name          = aws_elasticache_subnet_group.redis.name
   security_group_ids         = [aws_security_group.redis.id]
-  engine                     = "redis"
-  engine_version             = "7.0"
-  auth_token                 = random_password.redis_password.result
+  automatic_failover_enabled = true
+  multi_az_enabled           = true
+  num_cache_clusters         = var.cache_instance_count
+  at_rest_encryption_enabled = true
   transit_encryption_enabled = true
+  auth_token                 = random_password.redis_password.result
+  apply_immediately          = true
 
   log_delivery_configuration {
     destination      = aws_cloudwatch_log_group.redis.name
@@ -75,6 +78,6 @@ resource "aws_elasticache_replication_group" "redis" {
   }
 
   tags = {
-    Name = local.tag_name
+    Name = "${local.tag_name}"
   }
 }

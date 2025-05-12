@@ -293,11 +293,15 @@ resource "kubernetes_service_account" "aws_load_balancer_controller" {
 }
 
 resource "helm_release" "aws_load_balancer_controller" {
-  name       = "aws-load-balancer-controller"
+  namespace        = "kube-system"
+  create_namespace = false
+  
+  # Set unique name based on cluster name to avoid conflicts
+  name       = "${substr(replace(var.name, "/[^a-zA-Z0-9]/", ""), 0, 20)}-aws-lb-controller"
+  
   repository = "https://aws.github.io/eks-charts"
   chart      = "aws-load-balancer-controller"
-  namespace  = "kube-system"
-  version    = "1.7.1"
+  version    = "1.5.4"
 
   set {
     name  = "clusterName"
