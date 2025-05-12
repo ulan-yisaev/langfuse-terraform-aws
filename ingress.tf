@@ -296,8 +296,8 @@ resource "helm_release" "aws_load_balancer_controller" {
   namespace        = "kube-system"
   create_namespace = false
   
-  # Set unique name based on cluster name to avoid conflicts
-  name       = "${substr(replace(var.name, "/[^a-zA-Z0-9]/", ""), 0, 20)}-aws-lb-controller"
+  # Keep the original name to match existing resources
+  name       = "aws-load-balancer-controller"
   
   repository = "https://aws.github.io/eks-charts"
   chart      = "aws-load-balancer-controller"
