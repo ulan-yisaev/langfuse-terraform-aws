@@ -118,27 +118,9 @@ resource "aws_iam_role_policy_attachment" "efs" {
   role       = aws_iam_role.efs.name
 }
 
-# Add EFS CSI Driver as an EKS addon
-resource "aws_eks_addon" "efs_csi" {
-  cluster_name = aws_eks_cluster.langfuse.name
-  addon_name   = "aws-efs-csi-driver"
-  
-  # For Fargate, we need to use addon_version that supports Fargate
-  addon_version = "v1.7.0-eksbuild.1"  # Use a compatible version
-  
-  # Configure service account for the addon
-  service_account_role_arn = aws_iam_role.efs.arn
-  
-  # Make sure the addon preserves any values set by users when upgrading/changing
-  resolve_conflicts_on_create = "OVERWRITE"
-  resolve_conflicts_on_update = "OVERWRITE"
-  
-  depends_on = [
-    aws_iam_role.efs,
-    aws_iam_role_policy_attachment.efs,
-    aws_eks_fargate_profile.namespaces
-  ]
-}
+# Note: For EKS Fargate, the EFS CSI driver is automatically provided by AWS
+# We don't need to install it manually, and we must use static provisioning
+# See: https://aws.amazon.com/about-aws/whats-new/2020/08/amazon-ek-on-aws-fargate-now-supports-amazon-efs-file-systems/
 
 resource "kubernetes_storage_class" "efs" {
   metadata {
@@ -146,12 +128,7 @@ resource "kubernetes_storage_class" "efs" {
   }
   storage_provisioner = "efs.csi.aws.com"
   parameters = {
-    provisioningMode = "efs-ap"
     fileSystemId     = aws_efs_file_system.langfuse.id
-    directoryPerms   = "700"
+    # Static provisioning for Fargate - Don't use provisioningMode
   }
-  
-  depends_on = [
-    aws_eks_addon.efs_csi
-  ]
 }

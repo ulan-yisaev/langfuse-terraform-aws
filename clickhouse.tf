@@ -55,3 +55,74 @@ resource "aws_efs_access_point" "zookeeper" {
     Name = "${local.tag_name} Zookeper"
   }
 }
+
+# Create the Clickhouse PVs for Fargate with static provisioning
+resource "kubernetes_persistent_volume" "clickhouse_data" {
+  count = var.clickhouse_instance_count
+
+  metadata {
+    name = "clickhouse-data-${count.index}"
+  }
+
+  spec {
+    capacity = {
+      storage = "8Gi"
+    }
+    volume_mode                      = "Filesystem"
+    access_modes                     = ["ReadWriteOnce"]
+    persistent_volume_reclaim_policy = "Retain"
+    storage_class_name               = kubernetes_storage_class.efs.metadata[0].name
+    persistent_volume_source {
+      csi {
+        driver        = "efs.csi.aws.com"
+        volume_handle = "${aws_efs_file_system.langfuse.id}::${aws_efs_access_point.clickhouse[count.index].id}"
+        volume_attributes = {
+          # No need for additional attributes with static provisioning
+        }
+      }
+    }
+    claim_ref {
+      name      = "data-langfuse-clickhouse-shard0-${count.index}"
+      namespace = "langfuse"
+    }
+  }
+
+  depends_on = [
+    kubernetes_storage_class.efs,
+  ]
+}
+
+resource "kubernetes_persistent_volume" "clickhouse_zookeeper" {
+  count = var.clickhouse_instance_count
+
+  metadata {
+    name = "clickhouse-zookeeper-${count.index}"
+  }
+
+  spec {
+    capacity = {
+      storage = "8Gi"
+    }
+    volume_mode                      = "Filesystem"
+    access_modes                     = ["ReadWriteOnce"]
+    persistent_volume_reclaim_policy = "Retain"
+    storage_class_name               = kubernetes_storage_class.efs.metadata[0].name
+    persistent_volume_source {
+      csi {
+        driver        = "efs.csi.aws.com"
+        volume_handle = "${aws_efs_file_system.langfuse.id}::${aws_efs_access_point.zookeeper[count.index].id}"
+        volume_attributes = {
+          # No need for additional attributes with static provisioning
+        }
+      }
+    }
+    claim_ref {
+      name      = "data-langfuse-zookeeper-${count.index}"
+      namespace = "langfuse"
+    }
+  }
+
+  depends_on = [
+    kubernetes_storage_class.efs,
+  ]
+}

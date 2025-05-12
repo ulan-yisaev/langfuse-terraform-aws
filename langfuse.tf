@@ -150,7 +150,8 @@ resource "helm_release" "langfuse" {
     aws_iam_role.langfuse_irsa,
     aws_iam_role_policy.langfuse_s3_access,
     aws_eks_fargate_profile.namespaces,
-    aws_eks_addon.efs_csi,
     kubernetes_storage_class.efs,
+    kubernetes_persistent_volume.clickhouse_data,
+    kubernetes_persistent_volume.clickhouse_zookeeper,
   ]
 }
