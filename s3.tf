@@ -21,16 +21,16 @@ resource "aws_s3_bucket_versioning" "langfuse" {
   }
 }
 
-resource "aws_s3_bucket_public_access_block" "langfuse" {
-  count = var.disable_s3_public_access_block ? 0 : 1
-
-  bucket = aws_s3_bucket.langfuse.id
-
-  block_public_acls       = true
-  block_public_policy     = true
-  ignore_public_acls      = true
-  restrict_public_buckets = true
-}
+# resource "aws_s3_bucket_public_access_block" "langfuse" {
+#   count = var.disable_s3_public_access_block ? 0 : 1
+#
+#   bucket = aws_s3_bucket.langfuse.id
+#
+#   block_public_acls       = true
+#   block_public_policy     = true
+#   ignore_public_acls      = true
+#   restrict_public_buckets = true
+# }
 
 # Add lifecycle rules for cost optimization
 resource "aws_s3_bucket_lifecycle_configuration" "langfuse" {

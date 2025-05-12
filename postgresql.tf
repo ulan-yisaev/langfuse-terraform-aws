@@ -4,10 +4,11 @@ resource "aws_security_group" "postgres" {
   vpc_id      = local.vpc_config.vpc_id
 
   ingress {
-    from_port   = 5432
-    to_port     = 5432
-    protocol    = "tcp"
-    cidr_blocks = [local.vpc_config.vpc_cidr_block]
+    description              = "PostgreSQL from EKS Fargate Pods"
+    from_port                = 5432
+    to_port                  = 5432
+    protocol                 = "tcp"
+    source_security_group_id = aws_security_group.eks.id
   }
 
   egress {

@@ -14,7 +14,7 @@ resource "aws_efs_mount_target" "eks" {
   count           = length(local.vpc_config.private_subnets)
   file_system_id  = aws_efs_file_system.langfuse.id
   subnet_id       = local.vpc_config.private_subnets[count.index]
-  security_groups = [aws_security_group.eks.id]
+  security_groups = [aws_security_group.efs.id]
 }
 
 # Security group for EFS
@@ -24,11 +24,11 @@ resource "aws_security_group" "efs" {
   vpc_id      = local.vpc_config.vpc_id
 
   ingress {
-    description = "NFS from VPC"
-    from_port   = 2049
-    to_port     = 2049
-    protocol    = "tcp"
-    cidr_blocks = [local.vpc_config.vpc_cidr_block]
+    description              = "NFS from EKS Fargate Pods"
+    from_port                = 2049
+    to_port                  = 2049
+    protocol                 = "tcp"
+    source_security_group_id = aws_security_group.eks.id
   }
 
   egress {
@@ -118,9 +118,21 @@ resource "aws_iam_role_policy_attachment" "efs" {
   role       = aws_iam_role.efs.name
 }
 
+# Add EFS CSI Driver as an EKS addon
+resource "aws_eks_addon" "efs_csi" {
+  cluster_name = aws_eks_cluster.langfuse.name
+  addon_name   = "aws-efs-csi-driver"
+  depends_on = [aws_iam_role.efs]
+}
+
 resource "kubernetes_storage_class" "efs" {
   metadata {
     name = "efs"
   }
   storage_provisioner = "efs.csi.aws.com"
+  parameters = {
+    provisioningMode = "efs-ap"
+    fileSystemId     = aws_efs_file_system.langfuse.id
+    directoryPerms   = "700"
+  }
 }
