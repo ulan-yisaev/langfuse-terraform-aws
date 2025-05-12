@@ -44,6 +44,8 @@ redis:
   auth:
     existingSecret: langfuse
     existingSecretPasswordKey: redis-password
+  tls:
+    enabled: true
 s3:
   deploy: false
   bucket: ${aws_s3_bucket.langfuse.id}
