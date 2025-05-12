@@ -24,11 +24,11 @@ resource "aws_security_group" "efs" {
   vpc_id      = local.vpc_config.vpc_id
 
   ingress {
-    description              = "NFS from EKS Fargate Pods"
-    from_port                = 2049
-    to_port                  = 2049
-    protocol                 = "tcp"
-    source_security_group_id = aws_security_group.eks.id
+    description     = "NFS from EKS Fargate Pods"
+    from_port       = 2049
+    to_port         = 2049
+    protocol        = "tcp"
+    security_groups = [aws_security_group.eks.id]
   }
 
   egress {
