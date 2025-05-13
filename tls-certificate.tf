@@ -71,7 +71,7 @@ resource "time_sleep" "wait_for_lb_tagging" {
   create_duration = "120s" // Increased wait time to 120 seconds
 }
 
-/*# Get the ALB details
+# Get the ALB details
 data "aws_lb" "ingress" {
   tags = {
     "elbv2.k8s.aws/cluster"    = var.name // This should be the EKS cluster name
@@ -96,4 +96,3 @@ resource "aws_route53_record" "langfuse_app_alias" {
     evaluate_target_health = true
   }
 }
-*/
