@@ -138,3 +138,9 @@ variable "fargate_profile_namespaces" {
     "kube-system",
   ]
 }
+
+variable "disable_lb_fallback" {
+  description = "Set to true to disable the fallback load balancer discovery mechanism"
+  type        = bool
+  default     = false
+}
