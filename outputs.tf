@@ -34,22 +34,3 @@ output "langfuse_kubernetes_secret_namespace" {
   description = "Namespace of the Kubernetes secret."
   value       = kubernetes_secret.langfuse.metadata[0].namespace
 }
-
-# Add these troubleshooting outputs
-output "eks_cluster_name" {
-  description = "EKS cluster name used for load balancer tagging"
-  value       = aws_eks_cluster.langfuse.name
-}
-
-output "domain_name" {
-  description = "Domain name used for Langfuse"
-  value       = var.domain
-}
-
-output "load_balancer_tags" {
-  description = "Tags used to search for the load balancer"
-  value = {
-    "elbv2.k8s.aws/cluster"    = var.name
-    "ingress.k8s.aws/resource" = "LoadBalancer"
-  }
-}

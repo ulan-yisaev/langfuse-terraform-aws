@@ -88,25 +88,6 @@ resource "aws_eks_fargate_profile" "namespaces" {
   }
 }
 
-# Specific Fargate Profile for CoreDNS with proper selector
-resource "aws_eks_fargate_profile" "coredns" {
-  cluster_name           = aws_eks_cluster.langfuse.name
-  fargate_profile_name   = "${var.name}-coredns"
-  pod_execution_role_arn = aws_iam_role.fargate.arn
-  subnet_ids             = local.vpc_config.private_subnets
-
-  selector {
-    namespace = "kube-system"
-    labels = {
-      "k8s-app" = "kube-dns"
-    }
-  }
-
-  tags = {
-    Name = "${local.tag_name}-coredns"
-  }
-}
-
 resource "aws_security_group" "eks" {
   name        = "${var.name}-eks"
   description = "Security group for Langfuse EKS cluster"

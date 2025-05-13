@@ -111,16 +111,6 @@ variable "cache_instance_count" {
   description = "Number of ElastiCache instances used in the cluster"
   type        = number
   default     = 2
-  
-  validation {
-    condition     = var.cache_instance_count > 0
-    error_message = "You must provision at least one Redis cache node."
-  }
-
-  validation {
-    condition     = var.cache_instance_count == 1 || var.cache_instance_count >= 2
-    error_message = "Redis cache node count must be 1 (no failover) or at least 2 (with failover)."
-  }
 }
 
 variable "clickhouse_instance_count" {
@@ -137,10 +127,4 @@ variable "fargate_profile_namespaces" {
     "langfuse",
     "kube-system",
   ]
-}
-
-variable "disable_lb_fallback" {
-  description = "Set to true to disable the fallback load balancer discovery mechanism"
-  type        = bool
-  default     = false
 }
