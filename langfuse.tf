@@ -72,7 +72,7 @@ langfuse:
       alb.ingress.kubernetes.io/listen-ports: '[{"HTTP":80}, {"HTTPS":443}]'
       alb.ingress.kubernetes.io/ssl-redirect: '443'
       alb.ingress.kubernetes.io/certificate-arn: "${local._acm_arn_for_ingress}"
-      ${length(var.loadbalancer_inbound_cidrs) > 0 && var.loadbalancer_inbound_cidrs[0] != "0.0.0.0/0" ? "alb.ingress.kubernetes.io/inbound-cidrs: \\"${\"${local.inbound_cidrs_annotation_value}\"}\\"" : ""}
+      ${length(var.loadbalancer_inbound_cidrs) > 0 && var.loadbalancer_inbound_cidrs[0] != "0.0.0.0/0" ? "alb.ingress.kubernetes.io/inbound-cidrs: \"${local.inbound_cidrs_annotation_value}\"" : ""}
     hosts:
     - host: ${var.domain}
       paths:
