@@ -14,6 +14,11 @@ locals {
   # The Ingress resource name typically matches the Helm release name.
   langfuse_actual_helm_release_name = var.helm_release_name != null ? var.helm_release_name : "langfuse"
   expected_lb_stack_tag             = "langfuse/${local.langfuse_actual_helm_release_name}"
+
+  # Format is typically internal-{cluster-name}-alb-{random-numbers}.{region}.elb.amazonaws.com
+  # We know from aws elbv2 describe-load-balancers that test-ai-langfuse-alb is the LB name
+  hardcoded_alb_dns_name = "internal-test-ai-langfuse-alb-105350835.eu-north-1.elb.amazonaws.com"
+  hardcoded_alb_zone_id  = "Z23TAZ6LKFMNIO"  # Fixed for eu-north-1
 }
 
 # ACM Certificate for the domain
@@ -68,6 +73,8 @@ resource "time_sleep" "wait_for_lb_tagging" {
 
 # Get the ALB details
 data "aws_lb" "ingress" {
+  count = 0  # Disable this data source for now due to AWS Load Balancer Controller issues
+
   tags = {
     "elbv2.k8s.aws/cluster"    = var.name // This should be the EKS cluster name
     "ingress.k8s.aws/stack"    = local.expected_lb_stack_tag
@@ -86,8 +93,9 @@ resource "aws_route53_record" "langfuse_app_alias" {
   type    = "A"
 
   alias {
-    name                   = data.aws_lb.ingress.dns_name
-    zone_id                = data.aws_lb.ingress.zone_id
+    # Use hardcoded values when data.aws_lb.ingress is disabled
+    name                   = length(data.aws_lb.ingress) > 0 ? data.aws_lb.ingress[0].dns_name : local.hardcoded_alb_dns_name
+    zone_id                = length(data.aws_lb.ingress) > 0 ? data.aws_lb.ingress[0].zone_id : local.hardcoded_alb_zone_id
     evaluate_target_health = true
   }
 }
