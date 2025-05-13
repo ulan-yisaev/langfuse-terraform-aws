@@ -58,17 +58,24 @@ resource "aws_acm_certificate_validation" "cert_validation_resource" {
  validation_record_fqdns = [for record in aws_route53_record.cert_validation : record.fqdn]
 }
 
+resource "time_sleep" "wait_for_lb_tagging" {
+  depends_on = [
+    helm_release.aws_load_balancer_controller,
+    helm_release.langfuse
+  ]
+  create_duration = "60s" // Wait for 60 seconds for ALB to be tagged
+}
+
 # Get the ALB details
 data "aws_lb" "ingress" {
   tags = {
-    "elbv2.k8s.aws/cluster"    = var.name
+    "elbv2.k8s.aws/cluster"    = var.name // This should be the EKS cluster name
     "ingress.k8s.aws/stack"    = local.expected_lb_stack_tag
     "ingress.k8s.aws/resource" = "LoadBalancer"
   }
 
   depends_on = [
-    helm_release.aws_load_balancer_controller,
-    helm_release.langfuse
+    time_sleep.wait_for_lb_tagging // Ensure this runs after the sleep
   ]
 }
 
