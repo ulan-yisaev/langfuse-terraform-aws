@@ -61,7 +61,7 @@ resource "kubernetes_persistent_volume" "clickhouse_data" {
   count = var.clickhouse_instance_count
 
   metadata {
-    name = "clickhouse-data-${count.index}"
+    name = "${var.helm_release_name != null ? var.helm_release_name : "langfuse"}-clickhouse-data-${count.index}"
   }
 
   spec {
@@ -82,13 +82,14 @@ resource "kubernetes_persistent_volume" "clickhouse_data" {
       }
     }
     claim_ref {
-      name      = "data-langfuse-clickhouse-shard0-${count.index}"
+      name      = "data-${var.helm_release_name != null ? var.helm_release_name : "langfuse"}-clickhouse-shard0-${count.index}"
       namespace = "langfuse"
     }
   }
 
   depends_on = [
     kubernetes_storage_class.efs,
+    aws_efs_access_point.clickhouse,
   ]
 }
 
@@ -96,7 +97,7 @@ resource "kubernetes_persistent_volume" "clickhouse_zookeeper" {
   count = var.clickhouse_instance_count
 
   metadata {
-    name = "clickhouse-zookeeper-${count.index}"
+    name = "${var.helm_release_name != null ? var.helm_release_name : "langfuse"}-zookeeper-data-${count.index}"
   }
 
   spec {
@@ -117,12 +118,13 @@ resource "kubernetes_persistent_volume" "clickhouse_zookeeper" {
       }
     }
     claim_ref {
-      name      = "data-langfuse-zookeeper-${count.index}"
+      name      = "data-${var.helm_release_name != null ? var.helm_release_name : "langfuse"}-zookeeper-${count.index}"
       namespace = "langfuse"
     }
   }
 
   depends_on = [
     kubernetes_storage_class.efs,
+    aws_efs_access_point.zookeeper,
   ]
 }

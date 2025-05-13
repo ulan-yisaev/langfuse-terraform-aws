@@ -73,8 +73,6 @@ resource "time_sleep" "wait_for_lb_tagging" {
 
 # Get the ALB details
 data "aws_lb" "ingress" {
-  count = 0  # Disable this data source for now due to AWS Load Balancer Controller issues
-
   tags = {
     "elbv2.k8s.aws/cluster"    = var.name // This should be the EKS cluster name
     "ingress.k8s.aws/stack"    = local.expected_lb_stack_tag
@@ -93,9 +91,8 @@ resource "aws_route53_record" "langfuse_app_alias" {
   type    = "A"
 
   alias {
-    # Use hardcoded values when data.aws_lb.ingress is disabled
-    name                   = length(data.aws_lb.ingress) > 0 ? data.aws_lb.ingress[0].dns_name : local.hardcoded_alb_dns_name
-    zone_id                = length(data.aws_lb.ingress) > 0 ? data.aws_lb.ingress[0].zone_id : local.hardcoded_alb_zone_id
+    name                   = data.aws_lb.ingress.dns_name
+    zone_id                = data.aws_lb.ingress.zone_id
     evaluate_target_health = true
   }
 }
