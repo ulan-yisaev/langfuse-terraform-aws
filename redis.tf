@@ -64,7 +64,7 @@ resource "aws_elasticache_replication_group" "redis" {
   security_group_ids         = [aws_security_group.redis.id]
   automatic_failover_enabled = true
   multi_az_enabled           = true
-  num_cache_clusters         = var.cache_instance_count
+  num_cache_clusters         = 2
   at_rest_encryption_enabled = true
   transit_encryption_enabled = true
   auth_token                 = random_password.redis_password.result
