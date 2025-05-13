@@ -63,7 +63,7 @@ resource "time_sleep" "wait_for_lb_tagging" {
     helm_release.aws_load_balancer_controller,
     helm_release.langfuse
   ]
-  create_duration = "60s" // Wait for 60 seconds for ALB to be tagged
+  create_duration = "120s" // Increased wait time to 120 seconds
 }
 
 # Get the ALB details
