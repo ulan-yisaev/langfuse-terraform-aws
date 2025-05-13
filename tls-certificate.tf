@@ -8,6 +8,12 @@ locals {
   # Determine ACM certificate ARN: use existing if provided, otherwise create a new one.
   acm_certificate_arn_to_use = var.existing_acm_certificate_arn != null ? var.existing_acm_certificate_arn : aws_acm_certificate.cert[0].arn
   create_new_acm_cert        = var.existing_acm_certificate_arn == null
+
+  # Determine the expected stack tag for the load balancer
+  # The Langfuse Ingress is in the "langfuse" namespace.
+  # The Ingress resource name typically matches the Helm release name.
+  langfuse_actual_helm_release_name = var.helm_release_name != null ? var.helm_release_name : "langfuse"
+  expected_lb_stack_tag             = "langfuse/${local.langfuse_actual_helm_release_name}"
 }
 
 # ACM Certificate for the domain
@@ -56,7 +62,7 @@ resource "aws_acm_certificate_validation" "cert_validation_resource" {
 data "aws_lb" "ingress" {
   tags = {
     "elbv2.k8s.aws/cluster"    = var.name
-    "ingress.k8s.aws/stack"    = "langfuse/langfuse"
+    "ingress.k8s.aws/stack"    = local.expected_lb_stack_tag
     "ingress.k8s.aws/resource" = "LoadBalancer"
   }
 
