@@ -70,29 +70,29 @@ resource "time_sleep" "wait_for_lb_tagging" {
   ]
   create_duration = "120s" // Increased wait time to 120 seconds
 }
-
-# Get the ALB details
-data "aws_lb" "ingress" {
-  tags = {
-    "elbv2.k8s.aws/cluster"    = var.name // This should be the EKS cluster name
-    "ingress.k8s.aws/stack"    = local.expected_lb_stack_tag
-    "ingress.k8s.aws/resource" = "LoadBalancer"
-  }
-
-  depends_on = [
-    time_sleep.wait_for_lb_tagging // Ensure this runs after the sleep
-  ]
-}
-
-# Create Route53 record for the ALB
-resource "aws_route53_record" "langfuse_app_alias" {
-  zone_id = data.aws_route53_zone.selected_hosted_zone.zone_id
-  name    = var.domain
-  type    = "A"
-
-  alias {
-    name                   = data.aws_lb.ingress.dns_name
-    zone_id                = data.aws_lb.ingress.zone_id
-    evaluate_target_health = true
-  }
-}
+#
+# # Get the ALB details
+# data "aws_lb" "ingress" {
+#   tags = {
+#     "elbv2.k8s.aws/cluster"    = var.name // This should be the EKS cluster name
+#     "ingress.k8s.aws/stack"    = local.expected_lb_stack_tag
+#     "ingress.k8s.aws/resource" = "LoadBalancer"
+#   }
+#
+#   depends_on = [
+#     time_sleep.wait_for_lb_tagging // Ensure this runs after the sleep
+#   ]
+# }
+#
+# # Create Route53 record for the ALB
+# resource "aws_route53_record" "langfuse_app_alias" {
+#   zone_id = data.aws_route53_zone.selected_hosted_zone.zone_id
+#   name    = var.domain
+#   type    = "A"
+#
+#   alias {
+#     name                   = data.aws_lb.ingress.dns_name
+#     zone_id                = data.aws_lb.ingress.zone_id
+#     evaluate_target_health = true
+#   }
+# }
