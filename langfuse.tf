@@ -1,9 +1,7 @@
 locals {
-  # Reference the ACM certificate ARN from tls-certificate.tf
-  _acm_arn_for_ingress = aws_acm_certificate.cert.arn
-
   # Convert the list of private subnet IDs to a comma-separated string for the annotation
   subnet_ids_for_alb_annotation = join(",", var.existing_private_subnet_ids)
+  inbound_cidrs_annotation_value = join(",", var.loadbalancer_inbound_cidrs)
 
   langfuse_values = <<EOT
 global:
@@ -14,7 +12,7 @@ langfuse:
       name: langfuse
       key: salt
   nextauth:
-    url: "https://${var.domain}"
+    url: "http://${var.domain}"
     secret:
       secretKeyRef:
         name: langfuse
@@ -62,8 +60,6 @@ s3:
     prefix: "media/"
 EOT
 
-  inbound_cidrs_annotation_value = join(",", var.loadbalancer_inbound_cidrs)
-
   ingress_values = <<EOT
 langfuse:
   ingress:
@@ -72,9 +68,8 @@ langfuse:
     annotations:
       alb.ingress.kubernetes.io/scheme: internal
       alb.ingress.kubernetes.io/target-type: 'ip'
-      alb.ingress.kubernetes.io/listen-ports: '[{"HTTP":80}, {"HTTPS":443}]'
-      alb.ingress.kubernetes.io/ssl-redirect: '443'
-      alb.ingress.kubernetes.io/certificate-arn: "${local._acm_arn_for_ingress}"
+      # Configure for HTTP only
+      alb.ingress.kubernetes.io/listen-ports: '[{"HTTP":80}]'
       # Explicitly specify subnets to use for the ALB
       alb.ingress.kubernetes.io/subnets: "${local.subnet_ids_for_alb_annotation}"
       ${length(var.loadbalancer_inbound_cidrs) > 0 && var.loadbalancer_inbound_cidrs[0] != "0.0.0.0/0" ? "alb.ingress.kubernetes.io/inbound-cidrs: \"${local.inbound_cidrs_annotation_value}\"" : ""}

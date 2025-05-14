@@ -49,21 +49,6 @@ variable "target_route53_zone_name" {
   // No default, must be provided
 }
 
-# These variables are kept for backward compatibility
-# with the current module source. They will be removed
-# in a future version after the repository is updated.
-variable "create_acm_certificate" {
-  description = "Set to true to create a new ACM certificate and validation records. This variable is deprecated and will be removed."
-  type        = bool
-  default     = true
-}
-
-variable "existing_acm_certificate_arn" {
-  description = "Optional ARN of an existing ACM certificate to use for the ALB. This variable is deprecated and will be removed."
-  type        = string
-  default     = null
-}
-
 variable "helm_release_name" {
 description = "Custom name for the Helm release to avoid conflicts with existing releases"
 type        = string
