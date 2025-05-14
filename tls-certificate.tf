@@ -7,7 +7,7 @@ data "aws_route53_zone" "selected_hosted_zone" {
 locals {
   # Determine ACM certificate ARN: use existing if provided, otherwise create a new one.
   acm_certificate_arn_to_use = var.existing_acm_certificate_arn != null ? var.existing_acm_certificate_arn : aws_acm_certificate.cert[0].arn
-  create_new_acm_cert        = var.existing_acm_certificate_arn == null
+  create_new_acm_cert        = var.create_acm_certificate && var.existing_acm_certificate_arn == null
 
   # Determine the expected stack tag for the load balancer
   # The Langfuse Ingress is in the "langfuse" namespace.
@@ -20,6 +20,11 @@ locals {
   hardcoded_alb_dns_name = "internal-test-ai-langfuse-alb-105350835.eu-north-1.elb.amazonaws.com"
   hardcoded_alb_zone_id  = "Z23TAZ6LKFMNIO"  # Fixed for eu-north-1
 }
+
+# Note: ACM DNS validation for public certificates typically requires CNAMEs in a public DNS zone.
+# Placing validation records only in a private zone may result in certificates remaining in 'Pending validation'
+# unless an out-of-band public DNS validation step is performed or an existing, publicly validated 
+# certificate (e.g., wildcard) is used via 'existing_acm_certificate_arn'.
 
 # ACM Certificate for the domain
 resource "aws_acm_certificate" "cert" {

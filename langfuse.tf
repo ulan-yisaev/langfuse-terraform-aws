@@ -162,8 +162,6 @@ resource "helm_release" "langfuse" {
     aws_eks_fargate_profile.namespaces,
     kubernetes_storage_class.efs,
     kubernetes_persistent_volume.clickhouse_data,
-    kubernetes_persistent_volume.clickhouse_zookeeper,
-    # Add dependency on certificate validation if creating a new certificate
-    local.create_new_acm_cert ? aws_acm_certificate_validation.cert_validation_resource[0] : null
+    kubernetes_persistent_volume.clickhouse_zookeeper
   ]
 }
