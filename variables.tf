@@ -5,7 +5,7 @@ variable "name" {
 }
 
 variable "domain" {
-  description = "Domain name used for resource naming (e.g., company.com)"
+  description = "Domain name for Langfuse (e.g., langfuse.ai-test.aws.lhv.eu)"
   type        = string
 }
 
@@ -44,13 +44,13 @@ variable "use_encryption_key" {
 }
 
 variable "target_route53_zone_name" {
-  description = "The name of the existing Route53 zone (e.g., ai-test.aws.lll.eu)."
+  description = "The name of the existing private Route53 zone (e.g., ai-test.aws.lhv.eu)."
   type        = string
   // No default, must be provided
 }
 
 variable "existing_acm_certificate_arn" {
-  description = "Optional ARN of an existing ACM certificate to use for the ALB."
+  description = "Optional ARN of an existing ACM certificate to use for the ALB. If provided, no new certificate will be created."
   type        = string
   default     = null
 }

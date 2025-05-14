@@ -1,6 +1,6 @@
 locals {
-  # Reference the ACM certificate ARN, mirroring the logic from tls-certificate.tf
-  _acm_arn_for_ingress = var.existing_acm_certificate_arn != null ? var.existing_acm_certificate_arn : aws_acm_certificate.cert[0].arn
+  # Reference the ACM certificate ARN from tls-certificate.tf
+  _acm_arn_for_ingress = local.acm_certificate_arn_to_use
 
   # Convert the list of private subnet IDs to a comma-separated string for the annotation
   subnet_ids_for_alb_annotation = join(",", var.existing_private_subnet_ids)
@@ -163,5 +163,7 @@ resource "helm_release" "langfuse" {
     kubernetes_storage_class.efs,
     kubernetes_persistent_volume.clickhouse_data,
     kubernetes_persistent_volume.clickhouse_zookeeper,
+    # Add dependency on certificate validation if creating a new certificate
+    local.create_new_acm_cert ? aws_acm_certificate_validation.cert_validation_resource[0] : null
   ]
 }
