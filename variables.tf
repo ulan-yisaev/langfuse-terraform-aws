@@ -49,18 +49,6 @@ variable "target_route53_zone_name" {
   // No default, must be provided
 }
 
-variable "create_acm_certificate" {
-  description = "Set to true to create a new ACM certificate and validation records. Set to false if using an existing_acm_certificate_arn."
-  type        = bool
-  default     = true
-}
-
-variable "existing_acm_certificate_arn" {
-  description = "Optional ARN of an existing ACM certificate to use for the ALB. If provided, no new certificate will be created."
-  type        = string
-  default     = null
-}
-
 variable "helm_release_name" {
 description = "Custom name for the Helm release to avoid conflicts with existing releases"
 type        = string

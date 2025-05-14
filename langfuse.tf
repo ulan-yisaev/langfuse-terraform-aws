@@ -1,6 +1,6 @@
 locals {
   # Reference the ACM certificate ARN from tls-certificate.tf
-  _acm_arn_for_ingress = local.acm_certificate_arn_to_use
+  _acm_arn_for_ingress = aws_acm_certificate.cert.arn
 
   # Convert the list of private subnet IDs to a comma-separated string for the annotation
   subnet_ids_for_alb_annotation = join(",", var.existing_private_subnet_ids)

@@ -6,7 +6,7 @@ data "aws_route53_zone" "selected_hosted_zone" {
 
 locals {
   # Determine ACM certificate ARN: use existing if provided, otherwise create a new one.
-  acm_certificate_arn_to_use = var.existing_acm_certificate_arn != null ? var.existing_acm_certificate_arn : aws_acm_certificate.cert[0].arn
+  acm_certificate_arn_to_use = var.existing_acm_certificate_arn != null ? var.existing_acm_certificate_arn : aws_acm_certificate.cert.arn
   create_new_acm_cert        = var.create_acm_certificate && var.existing_acm_certificate_arn == null
 
   # Determine the expected stack tag for the load balancer
@@ -23,12 +23,11 @@ locals {
 
 # Note: ACM DNS validation for public certificates typically requires CNAMEs in a public DNS zone.
 # Placing validation records only in a private zone may result in certificates remaining in 'Pending validation'
-# unless an out-of-band public DNS validation step is performed or an existing, publicly validated 
+# unless an out-of-band public DNS validation step is performed or an existing, publicly validated
 # certificate (e.g., wildcard) is used via 'existing_acm_certificate_arn'.
 
 # ACM Certificate for the domain
 resource "aws_acm_certificate" "cert" {
-  count             = local.create_new_acm_cert ? 1 : 0
   domain_name       = var.domain
   validation_method = "DNS"
 
@@ -37,7 +36,7 @@ resource "aws_acm_certificate" "cert" {
   }
 
   tags = {
-    Name = local.tag_name
+    Name = "${local.tag_name}-langfuse-cert"
   }
 
   lifecycle {
@@ -47,14 +46,13 @@ resource "aws_acm_certificate" "cert" {
 
 # Create DNS records for certificate validation
 resource "aws_route53_record" "cert_validation" {
-  # Only create validation records if a new cert is being created
-  for_each = local.create_new_acm_cert ? {
-    for dvo in aws_acm_certificate.cert[0].domain_validation_options : dvo.domain_name => {
+  for_each = {
+    for dvo in aws_acm_certificate.cert.domain_validation_options : dvo.domain_name => {
       name   = dvo.resource_record_name
       record = dvo.resource_record_value
       type   = dvo.resource_record_type
     }
-  } : {}
+  }
 
   allow_overwrite = true
   name            = each.value.name
@@ -64,33 +62,37 @@ resource "aws_route53_record" "cert_validation" {
   zone_id         = data.aws_route53_zone.selected_hosted_zone.zone_id
 }
 
-# ACM certificate validation is attempted even though it might not work with private Route 53 zones
-# This follows the same pattern as your existing core module
 resource "aws_acm_certificate_validation" "cert_validation_resource" {
-  count = local.create_new_acm_cert ? 1 : 0
-
-  certificate_arn         = aws_acm_certificate.cert[0].arn
+  certificate_arn         = aws_acm_certificate.cert.arn
   validation_record_fqdns = [for record in aws_route53_record.cert_validation : record.fqdn]
+
+  # You might need to increase timeouts if validation in private zone is slow or problematic
+  timeouts {
+    create = "45m"
+  }
 }
+
+# --- ALB Lookup and Alias Record ---
 
 resource "time_sleep" "wait_for_lb_tagging" {
   depends_on = [
     helm_release.aws_load_balancer_controller,
-    helm_release.langfuse
+    helm_release.langfuse,
+    aws_acm_certificate_validation.cert_validation_resource
   ]
-  create_duration = "120s" // Increased wait time to 120 seconds
+  create_duration = "120s" // Wait for ALB to be created, tagged, and for cert to be associated
 }
 
 # Get the ALB details
 data "aws_lb" "ingress" {
   tags = {
-    "elbv2.k8s.aws/cluster"    = var.name // This should be the EKS cluster name
+    "elbv2.k8s.aws/cluster"    = var.name
     "ingress.k8s.aws/stack"    = local.expected_lb_stack_tag
     "ingress.k8s.aws/resource" = "LoadBalancer"
   }
 
   depends_on = [
-    time_sleep.wait_for_lb_tagging // Ensure this runs after the sleep
+    time_sleep.wait_for_lb_tagging
   ]
 }
 
