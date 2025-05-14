@@ -2,6 +2,9 @@ locals {
   # Reference the ACM certificate ARN, mirroring the logic from tls-certificate.tf
   _acm_arn_for_ingress = var.existing_acm_certificate_arn != null ? var.existing_acm_certificate_arn : aws_acm_certificate.cert[0].arn
 
+  # Convert the list of private subnet IDs to a comma-separated string for the annotation
+  subnet_ids_for_alb_annotation = join(",", var.existing_private_subnet_ids)
+
   langfuse_values = <<EOT
 global:
   defaultStorageClass: efs
@@ -72,6 +75,8 @@ langfuse:
       alb.ingress.kubernetes.io/listen-ports: '[{"HTTP":80}, {"HTTPS":443}]'
       alb.ingress.kubernetes.io/ssl-redirect: '443'
       alb.ingress.kubernetes.io/certificate-arn: "${local._acm_arn_for_ingress}"
+      # Explicitly specify subnets to use for the ALB
+      alb.ingress.kubernetes.io/subnets: "${local.subnet_ids_for_alb_annotation}"
       ${length(var.loadbalancer_inbound_cidrs) > 0 && var.loadbalancer_inbound_cidrs[0] != "0.0.0.0/0" ? "alb.ingress.kubernetes.io/inbound-cidrs: \"${local.inbound_cidrs_annotation_value}\"" : ""}
     hosts:
     - host: ${var.domain}
