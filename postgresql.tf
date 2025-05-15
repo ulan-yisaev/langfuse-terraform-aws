@@ -58,7 +58,6 @@ resource "aws_rds_cluster" "postgres" {
   backup_retention_period      = 7
   preferred_backup_window      = "03:00-04:00"
   preferred_maintenance_window = "mon:04:00-mon:05:00"
-  apply_immediately            = true
 
   serverlessv2_scaling_configuration {
     min_capacity = var.postgres_min_capacity
@@ -83,7 +82,6 @@ resource "aws_rds_cluster_instance" "postgres" {
   instance_class     = "db.serverless"
   engine             = aws_rds_cluster.postgres.engine
   engine_version     = aws_rds_cluster.postgres.engine_version
-  apply_immediately  = true
 
   # Enable Performance Insights
   performance_insights_enabled          = true
