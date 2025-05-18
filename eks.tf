@@ -150,4 +150,32 @@ resource "aws_iam_role_policy_attachment" "eks_service_policy" {
 resource "aws_cloudwatch_log_group" "eks" {
   name              = "/aws/eks/${var.name}/cluster"
   retention_in_days = 30
+}
+
+# Manage the CoreDNS add-on for Fargate compatibility
+data "aws_eks_addon_version" "coredns" {
+  addon_name         = "coredns"
+  kubernetes_version = aws_eks_cluster.langfuse.version
+}
+
+resource "aws_eks_addon" "coredns" {
+  cluster_name    = aws_eks_cluster.langfuse.name
+  addon_name      = "coredns"
+  addon_version   = data.aws_eks_addon_version.coredns.version
+  resolve_conflicts_on_create = "OVERWRITE"
+  resolve_conflicts_on_update = "OVERWRITE"
+
+  # This is the key configuration for Fargate
+  configuration_values = jsonencode({
+    computeType = "Fargate"
+  })
+
+  tags = {
+    Name = "${local.tag_name}-coredns-addon"
+  }
+
+  depends_on = [
+    # Ensure the Fargate profile for kube-system is created before configuring the addon
+    aws_eks_fargate_profile.namespaces
+  ]
 } 
