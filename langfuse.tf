@@ -96,7 +96,7 @@ EOT
 
 resource "kubernetes_namespace" "langfuse" {
   metadata {
-    name = "langfuse"
+    name = var.kubernetes_namespace
   }
 }
 
@@ -119,7 +119,7 @@ resource "random_bytes" "encryption_key" {
 resource "kubernetes_secret" "langfuse" {
   metadata {
     name      = "langfuse"
-    namespace = "langfuse"
+    namespace = var.kubernetes_namespace
   }
 
   data = {
@@ -132,12 +132,21 @@ resource "kubernetes_secret" "langfuse" {
   }
 }
 
+resource "time_sleep" "wait_for_pv_binding" {
+  # This depends on all PVs that need to be bound before Helm starts
+  depends_on = [
+    kubernetes_persistent_volume.clickhouse_data,
+    kubernetes_persistent_volume.clickhouse_zookeeper
+  ]
+  create_duration = "60s" # Wait for 1 minute after PVs are defined
+}
+
 resource "helm_release" "langfuse" {
   name       = var.helm_release_name != null ? var.helm_release_name : "langfuse"
   repository       = "https://langfuse.github.io/langfuse-k8s"
   version          = var.helm_chart_version
   chart            = "langfuse"
-  namespace        = "langfuse"
+  namespace        = var.kubernetes_namespace
   create_namespace = true
 
   # Apply configuration from var.helm_release_config
@@ -157,6 +166,7 @@ resource "helm_release" "langfuse" {
     aws_eks_fargate_profile.namespaces,
     kubernetes_storage_class.efs,
     kubernetes_persistent_volume.clickhouse_data,
-    kubernetes_persistent_volume.clickhouse_zookeeper
+    kubernetes_persistent_volume.clickhouse_zookeeper,
+    time_sleep.wait_for_pv_binding
   ]
 }

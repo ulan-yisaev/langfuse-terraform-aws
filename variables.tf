@@ -122,3 +122,9 @@ variable "helm_chart_version" {
   type        = string
   default     = "1.2.10" # Default to current version
 }
+
+variable "kubernetes_namespace" {
+  description = "The Kubernetes namespace for Langfuse resources."
+  type        = string
+  default     = "langfuse"
+}

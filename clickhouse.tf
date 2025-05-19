@@ -83,7 +83,7 @@ resource "kubernetes_persistent_volume" "clickhouse_data" {
     }
     claim_ref {
       name      = "data-${var.helm_release_name != null ? var.helm_release_name : "langfuse"}-clickhouse-shard0-${count.index}"
-      namespace = "langfuse"
+      namespace = var.kubernetes_namespace
     }
   }
 
@@ -119,7 +119,7 @@ resource "kubernetes_persistent_volume" "clickhouse_zookeeper" {
     }
     claim_ref {
       name      = "data-${var.helm_release_name != null ? var.helm_release_name : "langfuse"}-zookeeper-${count.index}"
-      namespace = "langfuse"
+      namespace = var.kubernetes_namespace
     }
   }
 
