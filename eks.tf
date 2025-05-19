@@ -176,6 +176,7 @@ resource "aws_eks_addon" "coredns" {
 
   depends_on = [
     # Ensure the Fargate profile for kube-system is created before configuring the addon
-    aws_eks_fargate_profile.namespaces
+    aws_eks_fargate_profile.namespaces,
+    helm_release.aws_load_balancer_controller
   ]
-} 
+}
