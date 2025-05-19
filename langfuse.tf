@@ -135,11 +135,11 @@ resource "kubernetes_secret" "langfuse" {
 resource "helm_release" "langfuse" {
   name       = var.helm_release_name != null ? var.helm_release_name : "langfuse"
   repository       = "https://langfuse.github.io/langfuse-k8s"
-  version          = "1.1.0"
+  version          = "1.2.10"
   chart            = "langfuse"
   namespace        = "langfuse"
   create_namespace = true
-  
+
   # Apply configuration from var.helm_release_config
   timeout = lookup(var.helm_release_config, "timeout", 300)
   wait    = lookup(var.helm_release_config, "wait", true)
