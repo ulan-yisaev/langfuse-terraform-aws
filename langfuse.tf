@@ -135,7 +135,7 @@ resource "kubernetes_secret" "langfuse" {
 resource "helm_release" "langfuse" {
   name       = var.helm_release_name != null ? var.helm_release_name : "langfuse"
   repository       = "https://langfuse.github.io/langfuse-k8s"
-  version          = "1.2.10"
+  version          = var.helm_chart_version
   chart            = "langfuse"
   namespace        = "langfuse"
   create_namespace = true

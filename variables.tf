@@ -116,3 +116,9 @@ variable "fargate_profile_namespaces" {
     "kube-system",
   ]
 }
+
+variable "helm_chart_version" {
+  description = "Version of the Langfuse Helm chart to deploy"
+  type        = string
+  default     = "1.2.10" # Default to current version
+}
